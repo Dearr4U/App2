@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Dearr</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%231ed760'/%3E%3Cpath d='M16 22.5l-5.5-5.2a3.6 3.6 0 0 1 5-5.2l.5.5.5-.5a3.6 3.6 0 1 1 5 5.2L16 22.5z' fill='%230a0a0a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000000;
+    --surface:#181818;
+    --surface-hover:#282828;
+    --green:#1ed760;
+    --text:#ffffff;
+    --text-muted:#a7a7a7;
+    --text-subtle:#727272;
+    --font:'Montserrat', system-ui, -apple-system, sans-serif;
+    --sidebar-w:240px;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    overflow:hidden;
+    -webkit-tap-highlight-color:transparent;
+  }
+  button{ font-family:inherit; border:none; background:none; color:inherit; cursor:pointer; }
+  input{ font-family:inherit; }
+  ul{ list-style:none; }
+  svg{ display:block; }
+
+  /* ===== APP SHELL ===== */
+  .app{ display:flex; flex-direction:column; height:100vh; height:100dvh; }
+  .body-row{ flex:1; display:flex; min-height:0; gap:8px; padding:8px 8px 0; }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{
+    width:var(--sidebar-w); flex-shrink:0; background:#121212; border-radius:8px;
+    display:flex; flex-direction:column; padding:18px 12px; gap:16px; overflow-y:auto;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding:4px 8px 2px; }
+  .brand-logo{ width:30px; height:30px; flex-shrink:0; opacity:0; }
+  .brand-name{ font-size:20px; font-weight:800; letter-spacing:-.4px; }
+
+  .nav-list{ display:flex; flex-direction:column; gap:1px; }
+  .nav-item{
+    display:flex; align-items:center; gap:14px; padding:9px 10px; border-radius:6px;
+    font-size:14px; font-weight:700; color:var(--text-muted); transition:color .2s ease; opacity:0;
+  }
+  .nav-item svg{ width:21px; height:21px; flex-shrink:0; }
+  .nav-item:hover{ color:var(--text); }
+  .nav-item.active{ color:var(--text); }
+  .nav-item.active svg{ color:var(--green); }
+
+  .sidebar-divider{ height:1px; background:#2a2a2a; margin:2px 8px; opacity:0; }
+
+  .library-cta{ margin:0 2px; padding:14px; border-radius:8px; background:#1f1f1f; opacity:0; }
+  .library-cta strong{ display:block; font-size:14px; font-weight:700; }
+  .library-cta p{ font-size:12.5px; color:var(--text-muted); line-height:1.5; margin-top:6px; }
+  .library-cta button{
+    margin-top:12px; background:#fff; color:#000; font-size:12.5px; font-weight:700;
+    padding:8px 14px; border-radius:20px; transition:transform .15s ease, background .15s ease;
+  }
+  .library-cta button:hover{ transform:scale(1.04); background:#f0f0f0; }
+
+  .library-list{ display:flex; flex-direction:column; gap:1px; padding:0 2px; }
+  .lib-item{
+    display:flex; align-items:center; gap:12px; padding:8px; border-radius:6px;
+    transition:background .15s ease; opacity:0;
+  }
+  .lib-item:hover, .lib-item:focus-visible{ background:#1c1c1c; }
+  .lib-item:focus-visible{ outline:1.5px solid var(--text-muted); outline-offset:-1px; }
+  .lib-thumb{
+    width:44px; height:44px; border-radius:4px; flex-shrink:0; background:var(--cover);
+    background-image:var(--cover-img, none); background-size:cover; background-position:center;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lib-thumb svg{ width:19px; height:19px; color:rgba(255,255,255,.92); transition:opacity .2s ease; }
+  .lib-item.has-cover-img .lib-thumb svg{ opacity:0; }
+  .lib-info{ min-width:0; }
+  .lib-name{ font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .2s ease; }
+  .lib-item.is-active .lib-name{ color:var(--green); }
+  .lib-sub{ font-size:11.5px; color:var(--text-subtle); display:flex; align-items:center; gap:5px; }
+  .eq{ height:10px; display:flex; align-items:flex-end; gap:1.5px; opacity:.45; }
+  .eq span{ width:2.5px; background:var(--green); border-radius:1px; height:30%; }
+  .eq.eq-playing{ opacity:1; }
+  .eq.eq-playing span{ animation:eqbounce 1s ease-in-out infinite; }
+  .eq.eq-playing span:nth-child(2){ animation-delay:.15s; }
+  .eq.eq-playing span:nth-child(3){ animation-delay:.3s; }
+  @keyframes eqbounce{ 0%,100%{ height:25%; } 50%{ height:100%; } }
+
+  /* ===== MAIN ===== */
+  .main{
+    flex:1; min-width:0; border-radius:8px; overflow:hidden; background:#121212;
+    display:flex; flex-direction:column;
+  }
+  .topbar{
+    flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 24px; gap:16px; background:transparent; transition:background .3s ease;
+  }
+  .topbar.scrolled{ background:rgba(0,0,0,.55); backdrop-filter:blur(12px); }
+
+  .nav-arrows{ display:flex; gap:8px; opacity:0; }
+  .nav-arrow{
+    width:32px; height:32px; border-radius:50%; background:rgba(0,0,0,.6);
+    display:flex; align-items:center; justify-content:center; transition:background .2s ease, transform .15s ease;
+  }
+  .nav-arrow:hover{ background:rgba(0,0,0,.85); transform:scale(1.06); }
+  .nav-arrow svg{ width:17px; height:17px; }
+
+  .topbar-mobile-brand{ display:none; align-items:center; gap:8px; font-weight:800; font-size:16px; opacity:0; }
+  .topbar-mobile-brand svg{ width:24px; height:24px; }
+
+  .search-wrap{
+    flex:1; max-width:380px; display:flex; align-items:center; gap:10px; background:#1f1f1f;
+    border-radius:24px; padding:9px 16px; transition:background .2s ease, box-shadow .2s ease; opacity:0;
+  }
+  .search-wrap:focus-within{ background:#2a2a2a; box-shadow:0 0 0 2px var(--text); }
+  .search-wrap svg{ width:16px; height:16px; color:var(--text-muted); flex-shrink:0; }
+  .search-wrap input{ flex:1; background:none; border:none; outline:none; color:var(--text); font-size:14px; }
+  .search-wrap input::placeholder{ color:var(--text-subtle); }
+
+  .profile-btn{
+    width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,#ff7aa2,#8c7bff);
+    display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:800;
+    flex-shrink:0; transition:transform .15s ease; opacity:0;
+  }
+  .profile-btn:hover{ transform:scale(1.07); }
+
+  .content{ flex:1; overflow-y:auto; position:relative; padding:8px 24px 28px; }
+  .main-bg-gradient{
+    position:absolute; top:0; left:0; right:0; height:380px;
+    background:linear-gradient(180deg, #1d3b29 0%, rgba(18,18,18,0) 100%); pointer-events:none; z-index:0;
+  }
+
+  .hero{ position:relative; z-index:1; padding:22px 0 6px; opacity:0; }
+  .greeting{ font-size:clamp(22px,4vw,32px); font-weight:800; letter-spacing:-.5px; margin-bottom:10px; }
+  .accent{ color:var(--green); }
+  .intro{ color:var(--text-muted); font-size:14px; line-height:1.7; max-width:520px; }
+
+  .section{ position:relative; z-index:1; margin-top:30px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+  .section-title{ font-size:clamp(18px,2.6vw,22px); font-weight:800; }
+  .section-count{ font-size:11.5px; font-weight:700; color:var(--text-subtle); letter-spacing:.5px; text-transform:uppercase; }
+
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(170px,1fr)); gap:18px; }
+
+  .card{
+    position:relative; background:var(--surface); border-radius:8px; padding:14px; cursor:pointer;
+    transition:background .25s ease; opacity:0;
+  }
+  .card:hover, .card:focus-visible{ background:var(--surface-hover); }
+  .card:focus-visible{ outline:2px solid var(--green); outline-offset:2px; }
+
+  .like-btn{
+    position:absolute; top:10px; left:10px; z-index:3; width:28px; height:28px; border-radius:50%;
+    background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center;
+    opacity:0; transform:scale(.7); transition:opacity .2s ease, transform .2s ease;
+  }
+  .card:hover .like-btn, .card:focus-within .like-btn, .card.liked .like-btn{ opacity:1; transform:scale(1); }
+  .like-btn svg{ width:14px; height:14px; color:#fff; transition:color .15s ease; }
+  .card.liked .like-btn svg{ color:#ff4d6d; fill:#ff4d6d; }
+
+  .now-badge{
+    position:absolute; top:10px; right:10px; z-index:3; display:flex; align-items:center; gap:5px;
+    background:rgba(0,0,0,.6); padding:4px 9px; border-radius:12px; font-size:9.5px; font-weight:700;
+    color:var(--green); opacity:0; transition:opacity .25s ease; pointer-events:none;
+  }
+  .card.playing .now-badge{ opacity:1; }
+  .now-dot{ width:5px; height:5px; border-radius:50%; background:var(--green); flex-shrink:0; }
+
+  .cover-wrap{ position:relative; aspect-ratio:1/1; border-radius:6px; overflow:hidden; margin-bottom:14px; box-shadow:0 8px 24px rgba(0,0,0,.5); }
+  .cover{ width:100%; height:100%; background:var(--cover); background-image:var(--cover-img, none); background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; }
+  .cover svg{ width:36%; height:36%; color:rgba(255,255,255,.92); transition:opacity .2s ease; }
+  .card.has-cover-img .cover svg{ opacity:0; }
+
+  .play-btn{
+    position:absolute; right:8px; bottom:8px; width:46px; height:46px; border-radius:50%; background:var(--green);
+    box-shadow:0 8px 16px rgba(0,0,0,.5); opacity:0; transform:translateY(8px) scale(.85);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .card:hover .play-btn, .card:focus-visible .play-btn{ opacity:1; transform:translateY(0) scale(1); }
+  .play-btn .icon-wrap{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .play-btn svg{ width:18px; height:18px; color:#000; }
+  .play-btn .icon-check-wrap{ opacity:0; transform:scale(.4); }
+
+  .card-title{ font-size:14px; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .card-sub{ font-size:11.5px; color:var(--text-muted); }
+
+  .app-footer{ position:relative; z-index:1; margin-top:40px; text-align:center; color:var(--text-subtle); font-size:12px; padding-bottom:24px; }
+
+  /* ===== NOW PLAYING BAR ===== */
+  .now-playing-bar{
+    flex-shrink:0; height:84px; background:#181818; border-top:1px solid #282828;
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 16px; gap:16px;
+    position:relative; opacity:0;
+  }
+  .progress-track{ position:absolute; top:0; left:0; right:0; height:2.5px; background:transparent; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:var(--green); }
+
+  .np-left{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .np-cover{
+    position:relative; width:54px; height:54px; border-radius:4px; overflow:hidden; flex-shrink:0;
+    background:var(--cover, #282828); background-image:var(--cover-img, none); background-size:cover; background-position:center;
+    transition:background .3s ease;
+  }
+  .np-cover-icon{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; transition:opacity .2s ease; }
+  .np-cover-icon svg{ width:21px; height:21px; color:rgba(255,255,255,.85); }
+  .np-cover.has-cover-img .np-cover-icon{ opacity:0; }
+  .np-eq{ position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; gap:2.5px; padding:15px; background:rgba(0,0,0,.4); opacity:0; transition:opacity .25s ease; }
+  .np-eq span{ width:3px; background:var(--green); border-radius:1px; height:20%; }
+  .now-playing-bar.is-playing .np-eq{ opacity:1; }
+  .now-playing-bar.is-playing .np-eq span{ animation:eqbounce 1s ease-in-out infinite; }
+  .now-playing-bar.is-playing .np-eq span:nth-child(2){ animation-delay:.15s; }
+  .now-playing-bar.is-playing .np-eq span:nth-child(3){ animation-delay:.3s; }
+  .np-info{ min-width:0; }
+  .np-title{ font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .np-sub{ font-size:11.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .np-center{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .np-controls{ display:flex; align-items:center; gap:18px; }
+  .np-controls button svg{ width:16px; height:16px; color:var(--text-muted); transition:color .15s ease, transform .15s ease; }
+  .np-controls button:hover svg{ color:var(--text); transform:scale(1.08); }
+  .np-play{ width:30px; height:30px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; transition:transform .15s ease; }
+  .np-play:hover{ transform:scale(1.06); }
+  .np-play svg{ width:14px; height:14px; color:#000; }
+  .np-play:hover svg{ color:#000; transform:none; }
+  .np-status{ font-size:10px; color:var(--text-subtle); letter-spacing:.3px; }
+
+  .np-right{ display:flex; align-items:center; justify-content:flex-end; gap:14px; }
+  .np-right svg{ width:15px; height:15px; color:var(--text-muted); }
+  .np-volume{ width:80px; height:4px; background:#4d4d4d; border-radius:2px; position:relative; overflow:hidden; }
+  .np-volume-fill{ position:absolute; left:0; top:0; bottom:0; width:65%; background:var(--text-muted); border-radius:2px; }
+
+  /* ===== BOTTOM TAB BAR (mobile) ===== */
+  .bottom-tabbar{ display:none; }
+
+  /* ===== TOAST ===== */
+  .toast{
+    position:fixed; left:50%; bottom:102px; transform:translate(-50%, 140%);
+    background:var(--green); color:#000; padding:12px 20px; border-radius:10px;
+    display:flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px;
+    box-shadow:0 14px 34px rgba(0,0,0,.5); transition:transform .35s cubic-bezier(.4,0,.2,1);
+    z-index:200; max-width:90vw;
+  }
+  .toast.show{ transform:translate(-50%,0); }
+  .toast svg{ width:16px; height:16px; flex-shrink:0; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width:900px){
+    .sidebar{ display:none; }
+    .body-row{ padding:0; gap:0; }
+    .main{ border-radius:0; }
+    .nav-arrows, .search-wrap{ display:none; }
+    .topbar-mobile-brand{ display:flex; }
+    .now-playing-bar{ height:64px; grid-template-columns:1fr auto; }
+    .np-center{ display:none; }
+    .np-volume{ display:none; }
+    .bottom-tabbar{
+      display:flex; justify-content:space-around; align-items:center; height:58px;
+      background:#000; border-top:1px solid #1a1a1a; flex-shrink:0; padding-bottom:env(safe-area-inset-bottom);
+    }
+    .tab-item{ display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-muted); font-size:10px; font-weight:600; padding:6px 14px; }
+    .tab-item svg{ width:21px; height:21px; }
+    .tab-item.active{ color:var(--text); }
+    .tab-item.active svg{ color:var(--text); }
+    .toast{ bottom:138px; }
+  }
+
+  @media (max-width:480px){
+    .grid{ grid-template-columns:repeat(auto-fill, minmax(135px,1fr)); gap:12px; }
+    .content{ padding:8px 14px 24px; }
+    .np-right{ gap:10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="body-row">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="16" fill="#1ed760"/>
+          <path d="M16 22.5l-5.5-5.2a3.6 3.6 0 0 1 5-5.2l.5.5.5-.5a3.6 3.6 0 1 1 5 5.2L16 22.5z" fill="#0a0a0a"/>
+        </svg>
+        <span class="brand-name">Dearr</span>
+      </div>
+
+      <nav class="nav-list">
+        <a class="nav-item active" href="#" id="navHome">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Beranda</span>
+        </a>
+        <a class="nav-item" href="#" id="navSearch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Cari</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-divider"></div>
+
+      <div class="library-cta">
+        <strong>Koleksi Dearr</strong>
+        <p>3 project spesial nungguin buat dibuka.</p>
+        <button id="scrollToGrid">Lihat semua</button>
+      </div>
+
+      <ul class="library-list" id="libraryList">
+        <li class="lib-item" tabindex="0" role="button" data-id="surat-cinta" data-link="https://dearr4u.github.io/surat-cintahh/" data-name="Surat Cinta" aria-label="Salin link Surat Cinta">
+          <div class="lib-thumb" style="--cover: linear-gradient(145deg, #ff7aa2, #a3002b);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div class="lib-info">
+            <p class="lib-name">Surat Cinta</p>
+            <p class="lib-sub">Project <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span></p>
+          </div>
+        </li>
+        <li class="lib-item" tabindex="0" role="button" data-id="galeri-kita" data-link="https://dearr4u.github.io/Gallery/" data-name="Galeri Kita" aria-label="Salin link Galeri Kita">
+          <div class="lib-thumb" style="--cover: linear-gradient(145deg, #8c7bff, #321a8f);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          </div>
+          <div class="lib-info">
+            <p class="lib-name">Galeri Kita</p>
+            <p class="lib-sub">Project <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span></p>
+          </div>
+        </li>
+        <li class="lib-item" tabindex="0" role="button" data-id="wish-list" data-link="https://dearr4u.github.io/wish-list/" data-name="Wish List" aria-label="Salin link Wish List">
+          <div class="lib-thumb" style="--cover: linear-gradient(145deg, #ffc15e, #c9650a);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          </div>
+          <div class="lib-info">
+            <p class="lib-name">Wish List</p>
+            <p class="lib-sub">Project <span class="eq" aria-hidden="true"><span></span><span></span><span></span></span></p>
+          </div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="topbar" id="topbar">
+        <div class="nav-arrows">
+          <button class="nav-arrow" id="navBack" aria-label="Ke atas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="nav-arrow" id="navForward" aria-label="Ke koleksi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+        <div class="topbar-mobile-brand">
+          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#1ed760"/><path d="M16 22.5l-5.5-5.2a3.6 3.6 0 0 1 5-5.2l.5.5.5-.5a3.6 3.6 0 1 1 5 5.2L16 22.5z" fill="#0a0a0a"/></svg>
+          <span>Dearr</span>
+        </div>
+
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Cari project" aria-label="Cari project">
+        </div>
+
+        <div class="profile-btn">D</div>
+      </div>
+
+      <div class="content" id="content">
+        <div class="main-bg-gradient" aria-hidden="true"></div>
+
+        <header class="hero" id="hero">
+          <p class="greeting" id="greeting">Halo, <span class="accent">Dearr</span> 💌</p>
+          <p class="intro">Ini koleksi kecil yang dibuat khusus buat kamu. Klik salah satu kartu untuk salin linknya, terus tinggal tempel ke mana aja kamu mau.</p>
+        </header>
+
+        <section class="section" id="made-for-dearr">
+          <div class="section-head">
+            <h2 class="section-title">Dibuat untuk Dearr</h2>
+            <span class="section-count">3 project</span>
+          </div>
+
+          <div class="grid">
+            <article class="card" tabindex="0" role="button" data-id="surat-cinta" data-link="https://dearr4u.github.io/surat-cintahh/" data-name="Surat Cinta" style="--cover: linear-gradient(145deg, #ff7aa2, #a3002b);">
+              <button class="like-btn" aria-label="Suka Surat Cinta">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+              <span class="now-badge"><span class="now-dot"></span>Diputar</span>
+              <div class="cover-wrap">
+                <div class="cover">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </div>
+                <button class="play-btn" tabindex="-1" aria-hidden="true">
+                  <span class="icon-wrap icon-play-wrap"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                  <span class="icon-wrap icon-check-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                </button>
+              </div>
+              <h3 class="card-title">Surat Cinta</h3>
+              <p class="card-sub">Klik buat salin link</p>
+            </article>
+
+            <article class="card" tabindex="0" role="button" data-id="galeri-kita" data-link="https://dearr4u.github.io/Gallery/" data-name="Galeri Kita" style="--cover: linear-gradient(145deg, #8c7bff, #321a8f);">
+              <button class="like-btn" aria-label="Suka Galeri Kita">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+              <span class="now-badge"><span class="now-dot"></span>Diputar</span>
+              <div class="cover-wrap">
+                <div class="cover">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                </div>
+                <button class="play-btn" tabindex="-1" aria-hidden="true">
+                  <span class="icon-wrap icon-play-wrap"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                  <span class="icon-wrap icon-check-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                </button>
+              </div>
+              <h3 class="card-title">Galeri Kita</h3>
+              <p class="card-sub">Klik buat salin link</p>
+            </article>
+
+            <article class="card" tabindex="0" role="button" data-id="wish-list" data-link="https://dearr4u.github.io/wish-list/" data-name="Wish List" style="--cover: linear-gradient(145deg, #ffc15e, #c9650a);">
+              <button class="like-btn" aria-label="Suka Wish List">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              </button>
+              <span class="now-badge"><span class="now-dot"></span>Diputar</span>
+              <div class="cover-wrap">
+                <div class="cover">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+                </div>
+                <button class="play-btn" tabindex="-1" aria-hidden="true">
+                  <span class="icon-wrap icon-play-wrap"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                  <span class="icon-wrap icon-check-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+                </button>
+              </div>
+              <h3 class="card-title">Wish List</h3>
+              <p class="card-sub">Klik buat salin link</p>
+            </article>
+          </div>
+        </section>
+
+        <footer class="app-footer">Dibuat dengan ❤️ untuk Dearr</footer>
+      </div>
+    </main>
+  </div>
+
+  <!-- NOW PLAYING BAR -->
+  <div class="now-playing-bar" id="nowPlayingBar">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="np-left">
+      <div class="np-cover" id="npCover">
+        <div class="np-cover-icon" id="npCoverIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <div class="np-eq" id="npEq"><span></span><span></span><span></span></div>
+      </div>
+      <div class="np-info">
+        <p class="np-title" id="npTitle">Pilih salah satu project</p>
+        <p class="np-sub" id="npSub">Klik kartu di atas untuk mulai</p>
+      </div>
+    </div>
+
+    <div class="np-center">
+      <div class="np-controls">
+        <button aria-label="Shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
+        <button aria-label="Sebelumnya"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="19 20 9 12 19 4 19 20"/><rect x="5" y="4" width="2" height="16"/></svg></button>
+        <button class="np-play" id="npPlay" aria-label="Putar">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button aria-label="Berikutnya"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 4 15 12 5 20 5 4"/><rect x="17" y="4" width="2" height="16"/></svg></button>
+        <button aria-label="Ulangi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+      </div>
+      <span class="np-status" id="npStatus">Belum ada yang disalin</span>
+    </div>
+
+    <div class="np-right">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1.6" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.6" fill="currentColor" stroke="none"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <div class="np-volume"><div class="np-volume-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM TAB BAR (mobile) -->
+  <nav class="bottom-tabbar" id="bottomTabbar">
+    <button class="tab-item active" data-tab="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+      <span>Beranda</span>
+    </button>
+    <button class="tab-item" data-tab="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Cari</span>
+    </button>
+    <button class="tab-item" data-tab="library">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <span>Koleksi</span>
+    </button>
+  </nav>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastText">Link disalin!</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  /* =====================================================================
+     GANTI COVER DI SINI
+     Tinggal isi link gambar online (URL) untuk tiap project di bawah ini.
+     Kalau dikosongin (string kosong ''), bakal balik pakai warna gradient
+     bawaan + ikon. Pastikan link gambar diakhiri .jpg/.png/.webp dsb dan
+     bisa diakses publik (misal dari ibb.co, imgur, atau hosting lain).
+  ===================================================================== */
+  var COVER_IMAGES = {
+    'surat-cinta': '',   // contoh: 'https://i.ibb.co/xxxxxxx/surat-cinta.jpg'
+    'galeri-kita': '',   // contoh: 'https://i.ibb.co/xxxxxxx/galeri-kita.jpg'
+    'wish-list':   ''    // contoh: 'https://i.ibb.co/xxxxxxx/wish-list.jpg'
+  };
+  /* ===================================================================== */
+
+  var content = document.getElementById('content');
+  var topbar = document.getElementById('topbar');
+  var cards = document.querySelectorAll('.card');
+  var libItems = document.querySelectorAll('.lib-item');
+  var likeButtons = document.querySelectorAll('.like-btn');
+  var toast = document.getElementById('toast');
+  var toastText = document.getElementById('toastText');
+  var nowPlayingBar = document.getElementById('nowPlayingBar');
+  var npCover = document.getElementById('npCover');
+  var npCoverIcon = document.getElementById('npCoverIcon');
+  var npTitle = document.getElementById('npTitle');
+  var npSub = document.getElementById('npSub');
+  var npStatus = document.getElementById('npStatus');
+  var npPlay = document.getElementById('npPlay');
+  var progressFill = document.getElementById('progressFill');
+  var searchInput = document.getElementById('searchInput');
+  var scrollToGridBtn = document.getElementById('scrollToGrid');
+  var navBack = document.getElementById('navBack');
+  var navForward = document.getElementById('navForward');
+  var tabItems = document.querySelectorAll('.tab-item');
+
+  var hasAnime = typeof anime === 'function';
+  var toastTimeout, eqStopTimeout, progressAnim;
+
+  /* ---------- greeting ---------- */
+  function setupGreeting(){
+    var hour = new Date().getHours();
+    var greet = 'Selamat malam';
+    if(hour < 11) greet = 'Selamat pagi';
+    else if(hour < 15) greet = 'Selamat siang';
+    else if(hour < 19) greet = 'Selamat sore';
+    var el = document.getElementById('greeting');
+    if(el) el.innerHTML = greet + ', <span class="accent">Dearr</span> 💌';
+  }
+
+  /* ---------- topbar scroll shadow ---------- */
+  function setupScrollTopbar(){
+    if(!content || !topbar) return;
+    content.addEventListener('scroll', function(){
+      topbar.classList.toggle('scrolled', content.scrollTop > 4);
+    });
+  }
+
+  /* ---------- search filter ---------- */
+  function setupSearch(){
+    if(!searchInput) return;
+    searchInput.addEventListener('input', function(e){
+      var q = e.target.value.toLowerCase().trim();
+      cards.forEach(function(card){
+        var name = (card.dataset.name || '').toLowerCase();
+        card.style.display = name.indexOf(q) !== -1 ? '' : 'none';
+      });
+    });
+  }
+
+  /* ---------- clipboard ---------- */
+  function copyLink(link){
+    if(navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(link);
+    }
+    return new Promise(function(resolve, reject){
+      try{
+        var ta = document.createElement('textarea');
+        ta.value = link;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      }catch(err){ reject(err); }
+    });
+  }
+
+  function showToast(name, ok){
+    toastText.textContent = ok !== false ? ('Link "' + name + '" disalin!') : 'Gagal menyalin, coba lagi ya';
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(function(){ toast.classList.remove('show'); }, 2200);
+  }
+
+  /* ---------- micro animations ---------- */
+  function pulseCard(el){
+    if(!hasAnime) return;
+    anime({ targets: el, scale: [1, 0.97, 1], duration: 280, easing: 'easeOutQuad' });
+  }
+
+  function morphToCheck(card){
+    var playBtn = card.querySelector('.play-btn');
+    if(!playBtn) return;
+    var playWrap = playBtn.querySelector('.icon-play-wrap');
+    var checkWrap = playBtn.querySelector('.icon-check-wrap');
+    if(hasAnime){
+      anime({ targets: playWrap, opacity: 0, scale: .4, duration: 200, easing: 'easeOutQuad' });
+      anime({ targets: checkWrap, opacity: 1, scale: 1, duration: 280, easing: 'easeOutBack' });
+    } else {
+      playWrap.style.opacity = 0;
+      checkWrap.style.opacity = 1;
+      checkWrap.style.transform = 'scale(1)';
+    }
+    clearTimeout(playBtn._morphTimeout);
+    playBtn._morphTimeout = setTimeout(function(){
+      if(hasAnime){
+        anime({ targets: checkWrap, opacity: 0, scale: .4, duration: 200, easing: 'easeOutQuad' });
+        anime({ targets: playWrap, opacity: 1, scale: 1, duration: 280, easing: 'easeOutBack' });
+      } else {
+        checkWrap.style.opacity = 0;
+        playWrap.style.opacity = 1;
+        playWrap.style.transform = 'scale(1)';
+      }
+    }, 1000);
+  }
+
+  function animateProgress(){
+    clearTimeout(eqStopTimeout);
+    if(progressAnim && typeof progressAnim.pause === 'function') progressAnim.pause();
+    progressFill.style.transition = 'none';
+    progressFill.style.width = '0%';
+    nowPlayingBar.classList.add('is-playing');
+
+    if(hasAnime){
+      progressAnim = anime({
+        targets: progressFill,
+        width: ['0%', '100%'],
+        duration: 2200,
+        easing: 'linear',
+        complete: function(){
+          anime({ targets: progressFill, width: '0%', duration: 300, easing: 'easeOutQuad' });
+          nowPlayingBar.classList.remove('is-playing');
+        }
+      });
+    } else {
+      requestAnimationFrame(function(){
+        progressFill.style.transition = 'width 2.2s linear';
+        progressFill.style.width = '100%';
+      });
+      eqStopTimeout = setTimeout(function(){
+        progressFill.style.transition = 'width .3s ease';
+        progressFill.style.width = '0%';
+        nowPlayingBar.classList.remove('is-playing');
+      }, 2200);
+    }
+  }
+
+  /* ---------- now playing state ---------- */
+  function setNowPlaying(id, name, coverCss, iconSvgEl){
+    cards.forEach(function(c){ c.classList.toggle('playing', c.dataset.id === id); });
+    libItems.forEach(function(li){
+      var active = li.dataset.id === id;
+      li.classList.toggle('is-active', active);
+      var eq = li.querySelector('.eq');
+      if(eq) eq.classList.toggle('eq-playing', active);
+    });
+
+    npCover.style.setProperty('--cover', coverCss);
+    var imgUrl = COVER_IMAGES[id];
+    npCover.style.setProperty('--cover-img', imgUrl ? 'url("' + imgUrl + '")' : 'none');
+    npCover.classList.toggle('has-cover-img', !!imgUrl);
+    npCoverIcon.innerHTML = '';
+    if(iconSvgEl){
+      npCoverIcon.appendChild(iconSvgEl.cloneNode(true));
+    }
+    npTitle.textContent = name;
+    npSub.textContent = 'Koleksi Dearr';
+    npStatus.textContent = 'Baru saja disalin';
+
+    animateProgress();
+  }
+
+  function handleActivate(el){
+    var link = el.dataset.link;
+    var name = el.dataset.name;
+    var id = el.dataset.id;
+
+    copyLink(link).then(function(){
+      showToast(name, true);
+    }).catch(function(){
+      showToast(name, false);
+    });
+
+    var cardEl = el.classList.contains('card') ? el : document.querySelector('.card[data-id="' + id + '"]');
+    if(cardEl){
+      pulseCard(cardEl);
+      morphToCheck(cardEl);
+      var coverCss = cardEl.style.getPropertyValue('--cover');
+      var iconSvg = cardEl.querySelector('.cover svg');
+      setNowPlaying(id, name, coverCss, iconSvg);
+    }
+  }
+
+  function setupCards(){
+    cards.forEach(function(card){
+      card.addEventListener('click', function(){ handleActivate(card); });
+      card.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          handleActivate(card);
+        }
+      });
+    });
+  }
+
+  function setupLibItems(){
+    libItems.forEach(function(li){
+      li.addEventListener('click', function(){ handleActivate(li); });
+      li.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' || e.key === ' '){
+          e.preventDefault();
+          handleActivate(li);
+        }
+      });
+    });
+  }
+
+  function setupLikeButtons(){
+    likeButtons.forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        var card = btn.closest('.card');
+        var liked = card.classList.toggle('liked');
+        if(hasAnime){
+          anime({ targets: btn, scale: [1, liked ? 1.3 : 0.85, 1], duration: 380, easing: 'easeOutElastic(1, .6)' });
+        }
+      });
+      btn.addEventListener('keydown', function(e){ e.stopPropagation(); });
+    });
+  }
+
+  /* ---------- decorative controls with light real behavior ---------- */
+  function setupTopbarNav(){
+    if(navBack) navBack.addEventListener('click', function(){
+      content.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    if(navForward) navForward.addEventListener('click', function(){
+      var grid = document.getElementById('made-for-dearr');
+      if(grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    if(scrollToGridBtn) scrollToGridBtn.addEventListener('click', function(){
+      var grid = document.getElementById('made-for-dearr');
+      if(grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function setupBottomTabs(){
+    tabItems.forEach(function(tab){
+      tab.addEventListener('click', function(){
+        tabItems.forEach(function(t){ t.classList.remove('active'); });
+        tab.classList.add('active');
+        if(tab.dataset.tab === 'home') content.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
+
+  var npPlaying = false;
+  function setupNpPlay(){
+    if(!npPlay) return;
+    npPlay.addEventListener('click', function(){
+      npPlaying = !npPlaying;
+      var svg = npPlay.querySelector('svg');
+      if(npPlaying){
+        svg.innerHTML = '<rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/>';
+      } else {
+        svg.innerHTML = '<path d="M8 5v14l11-7z"/>';
+      }
+      if(hasAnime){
+        anime({ targets: npPlay, scale: [0.85, 1], duration: 220, easing: 'easeOutBack' });
+      }
+    });
+  }
+
+  /* ---------- intro animation ---------- */
+  function playIntroAnimation(){
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var introSelectors = ['.brand-logo','.nav-item','.sidebar-divider','.library-cta','.lib-item','.nav-arrows','.topbar-mobile-brand','.search-wrap','.profile-btn','.hero','.card','.now-playing-bar'];
+
+    if(reduceMotion || !hasAnime){
+      introSelectors.forEach(function(sel){
+        document.querySelectorAll(sel).forEach(function(el){ el.style.opacity = 1; });
+      });
+      return;
+    }
+
+    var tl = anime.timeline({ easing: 'easeOutCubic' });
+    tl.add({ targets: '.brand-logo', opacity: [0,1], scale: [0,1], duration: 500, easing: 'easeOutBack' })
+      .add({ targets: '.nav-item', opacity: [0,1], translateX: [-14,0], duration: 360, delay: anime.stagger(60) }, '-=250')
+      .add({ targets: '.sidebar-divider, .library-cta', opacity: [0,1], translateY: [10,0], duration: 360 }, '-=200')
+      .add({ targets: '.lib-item', opacity: [0,1], translateY: [10,0], duration: 340, delay: anime.stagger(70) }, '-=200')
+      .add({ targets: ['.nav-arrows','.topbar-mobile-brand','.search-wrap','.profile-btn'], opacity: [0,1], translateY: [-8,0], duration: 380, delay: anime.stagger(60) }, '-=450')
+      .add({ targets: '.hero', opacity: [0,1], translateY: [16,0], duration: 480 }, '-=260')
+      .add({ targets: '.card', opacity: [0,1], translateY: [22,0], scale: [0.95,1], duration: 500, delay: anime.stagger(90) }, '-=220')
+      .add({ targets: '.now-playing-bar', opacity: [0,1], translateY: [16,0], duration: 420 }, '-=600');
+  }
+
+  /* ---------- terapkan cover gambar (kalau ada) ---------- */
+  function applyCoverImages(){
+    cards.forEach(function(card){
+      var url = COVER_IMAGES[card.dataset.id];
+      var cover = card.querySelector('.cover');
+      if(url){
+        cover.style.setProperty('--cover-img', 'url("' + url + '")');
+        card.classList.add('has-cover-img');
+      }
+    });
+    libItems.forEach(function(li){
+      var url = COVER_IMAGES[li.dataset.id];
+      var thumb = li.querySelector('.lib-thumb');
+      if(url){
+        thumb.style.setProperty('--cover-img', 'url("' + url + '")');
+        li.classList.add('has-cover-img');
+      }
+    });
+  }
+
+  function init(){
+    setupGreeting();
+    setupScrollTopbar();
+    setupSearch();
+    setupCards();
+    setupLibItems();
+    setupLikeButtons();
+    setupTopbarNav();
+    setupBottomTabs();
+    setupNpPlay();
+    applyCoverImages();
+    playIntroAnimation();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>
+
+</body>
+</html>
